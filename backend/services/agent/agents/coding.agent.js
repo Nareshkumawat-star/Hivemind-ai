@@ -91,7 +91,21 @@ ${state.prompt}
         ` 
         const res=await llm.invoke(prompt)
         console.log(res)
-        const data=JSON.parse(res.content)
+        let content = res.content.trim()
+        if (content.startsWith("```")) {
+            content = content.replace(/^```json\s*/i, "").replace(/```$/, "").trim()
+        }
+        let data
+        try {
+            data = JSON.parse(content)
+        } catch (e) {
+            const match = content.match(/\{[\s\S]*\}/)
+            if (match) {
+                data = JSON.parse(match[0])
+            } else {
+                throw e
+            }
+        }
         await deductCredits(state.userId,"coding")
         
         return {
