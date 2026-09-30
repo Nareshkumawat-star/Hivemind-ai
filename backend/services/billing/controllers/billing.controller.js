@@ -1,6 +1,7 @@
-import axios from "axios"
 import { PLANS } from "../config/Plans.js"
-import razorpay from "../config/razorpay.js"
+import { updateUserPayment } from "../../auth/controllers/auth.controller.js"
+import { callHandler } from "../../../server/internal.js"
+import { getRazorpay } from "../config/razorpay.js"
 import Payment from "../models/payment.model.js"
 import crypto from "crypto"
 export const createOrder = async (req, res) => {
@@ -13,7 +14,7 @@ export const createOrder = async (req, res) => {
             return res.status(404).json({ message: "plan not found" })
         }
 
-        const order = await razorpay.orders.create({
+        const order = await getRazorpay().orders.create({
             amount: selectedPlan.amount * 100,
             currency: "INR",
             receipt: `receipt-${Date.now()}`
@@ -62,7 +63,9 @@ export const verifyPayment = async (req,res) => {
  payment.paymentId=razorpay_payment_id
  await payment.save()
 
- const {data}=await axios.post(`${process.env.AUTH_SERVICE}/update-plan`,{userId:payment.userId,plan:payment.plan,credits:payment.credits})
+ const { data } = await callHandler(updateUserPayment, {
+     body: { userId: payment.userId, plan: payment.plan, credits: payment.credits }
+ })
  console.log(data)
 
  return res.status(200).json({message:"Payment Verified"})

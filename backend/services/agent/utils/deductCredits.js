@@ -1,9 +1,12 @@
-import axios from "axios"
+import { deductCredits as authDeductCredits } from "../../auth/controllers/auth.controller.js"
+import { callHandler } from "../../../server/internal.js"
 
-export const deductCredits=async (userId,agent)=>{
+export const deductCredits = async (userId, agent) => {
     try {
-       const {data}=await axios.post(`${process.env.AUTH_SERVICE}/deduct-credits`,{userId,agent})
-       return data
+        const { data } = await callHandler(authDeductCredits, {
+            body: { userId, agent }
+        })
+        return data
     } catch (error) {
         console.log(error)
         return null

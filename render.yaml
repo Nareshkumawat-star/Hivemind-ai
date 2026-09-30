@@ -1,0 +1,77 @@
+# Render Blueprint - deploys the whole app as ONE free web service.
+#
+# Why one service: Render's free plan grants 750 instance hours per month and a
+# month is ~730 hours, so exactly one always-on service fits. The previous
+# design (gateway + 4 services behind ECR/ECS) needs 5+ instances, and free
+# instances can't receive private network traffic, so it can never be free.
+#
+# The React app is built here and served by the API from the same origin, which
+# is what lets the session cookie stay first-party (sameSite: "strict").
+#
+# Secrets marked `sync: false` are never stored in this file - set them once in
+# the Render dashboard (Environment tab).
+
+services:
+  - type: web
+    name: hivemind-ai
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    autoDeployTrigger: commit
+    # Built from the repo root so frontend/dist is available at runtime.
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    startCommand: node backend/server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+
+      # ---- Required secrets (set in the dashboard) ----
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      # Base64 of services/auth/serviceAccountKey.json:
+      #   base64 -w0 serviceAccountKey.json
+      - key: FIREBASE_SERVICE_ACCOUNT_BASE64
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      # NOTE: the agent reads AWS_SECRET_KEY (not AWS_SECRET_ACCESS_KEY)
+      - key: AWS_SECRET_KEY
+        sync: false
+      - key: AWS_BUCKET_NAME
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+
+      # Only needed if the SPA is ever hosted on a different domain.
+      - key: FRONTEND_URL
+        sync: false
+
+      # ---- Build-time vars, inlined into the Vite bundle ----
+      # Do NOT set VITE_SERVER_URL: leaving it unset makes API calls relative,
+      # which is what keeps everything same-origin.
+      - key: VITE_FIREBASE_API_KEY
+        sync: false
+      - key: VITE_RAZORPAY_KEY_ID
+        sync: false

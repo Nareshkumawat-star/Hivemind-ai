@@ -41,7 +41,8 @@ export const login = async (req, res) => {
 
         res.cookie("session", sessionId, {
             httpOnly: true,
-            secure: false,
+            secure: process.env.NODE_ENV === "production",
+            // Safe to keep strict: the SPA and API share one origin.
             sameSite: "strict",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
