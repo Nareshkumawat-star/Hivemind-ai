@@ -41,7 +41,11 @@ export const login = async (req, res) => {
 
         res.cookie("session", sessionId, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            // "auto" marks the cookie Secure when the request arrived over
+            // HTTPS (trust proxy is on, so X-Forwarded-Proto is honoured).
+            // This keeps login working on Render's TLS without depending on
+            // NODE_ENV being set.
+            secure: "auto",
             // Safe to keep strict: the SPA and API share one origin.
             sameSite: "strict",
             maxAge: 7 * 24 * 60 * 60 * 1000

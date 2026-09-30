@@ -20,14 +20,15 @@ services:
     branch: main
     autoDeployTrigger: commit
     # Built from the repo root so frontend/dist is available at runtime.
-    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    # --include=dev is essential: vite lives in devDependencies and Render
+    # sets NODE_ENV=production during builds, which makes plain npm install
+    # skip it (the cause of the first failed deploy).
+    buildCommand: cd frontend && npm install --include=dev --no-audit --no-fund && npm run build && cd ../backend && npm install --include=dev --no-audit --no-fund
     startCommand: node backend/server/index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: "22"
-      - key: NODE_ENV
-        value: production
 
       # ---- Required secrets (set in the dashboard) ----
       - key: MONGODB_URI
