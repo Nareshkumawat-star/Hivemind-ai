@@ -75,7 +75,9 @@ missing secret fail with a clear error rather than crashing the process.
 
 ## Notes
 
-- The per-service `backend/services/*/package.json`, `Dockerfile`s and
-  `docker-compose.yml` are leftovers from the microservice layout and are no
-  longer used. The merged app installs everything from `backend/package.json`.
+- The microservice layout files (per-service `package.json`s, all `Dockerfile`s,
+  `docker-compose.yml`, and the `services/*/index.js` entrypoints) have been
+  deleted. The merged app installs everything from `backend/package.json`.
+  The remaining `backend/services/*` and `backend/gateway` directories only hold
+  code that the merged app imports.
 - Render's free tier is explicitly not for production use.
