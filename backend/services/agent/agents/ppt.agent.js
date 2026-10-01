@@ -1,7 +1,6 @@
 import { getModel } from "../config/llmModels.js"
 import { generatePpt } from "../utils/generatePpt.js"
-import { getFromS3 } from "../utils/getFromS3.js"
-import { uploadToS3 } from "../utils/uploadToS3.js"
+import { saveArtifact, artifactUrl } from "../../../shared/files/fileStore.js"
 import { deductCredits } from "../utils/deductCredits.js"
 import { checkAgentLimit } from "../config/agentLimit.js"
 export const pptAgent=async (state) => {
@@ -44,7 +43,11 @@ Topic:
 ${state.prompt}`
 
 const res=await llm.invoke(prompt)
-const data=JSON.parse(res.content)
+
+// Models sometimes wrap the JSON in ```json fences despite the prompt asking
+// for none. Strip them so a fenced reply doesn't become "failed to generate ppt".
+const raw=String(res.content ?? "").trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim()
+const data=JSON.parse(raw)
 await deductCredits(state.userId,"ppt")
 const ppt=await generatePpt(data)
 const buffer=await ppt.write({
@@ -53,8 +56,8 @@ const buffer=await ppt.write({
 
 const filename=`ppt-${Date.now()}.pptx`
 
-await uploadToS3(filename,buffer,"application/vnd.openxmlformats-officedocument.presentationml.presentation")
-const downloadUrl=await getFromS3(filename,24*60*60)
+const key=await saveArtifact(filename,buffer,"application/vnd.openxmlformats-officedocument.presentationml.presentation")
+const downloadUrl=artifactUrl(key)
 
 return {
     ...state,
@@ -64,14 +67,14 @@ return {
 
 📥 [Download PPT](${downloadUrl})
 
-_Link expires in 10 minutes._`
+_Link stays valid for 7 days._`
 }
 
     } catch (error) {
         console.log(error)
          return {
             ...state,
-            aiResponse:error?.data?.message || "failed to generate ppt"
+            aiResponse:error?.data?.message || `failed to generate ppt: ${error.message}`
         }
        
 

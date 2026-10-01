@@ -69,3 +69,6 @@ firebase-adminsdk*.json
 # =========================
 .cache/
 tmp/
+
+# Render env values sheet - contains secrets, never commit
+render-env-values.txt

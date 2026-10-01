@@ -9,6 +9,7 @@ import morgan from "morgan"
 
 import protect from "../gateway/middleware/auth.middleware.js"
 import { getCurrentUser } from "../gateway/controllers/user.controller.js"
+import { getArtifact } from "../shared/files/fileStore.js"
 import authRouter from "../services/auth/routes/auth.route.js"
 import chatRouter from "../services/chat/routes/chat.routes.js"
 import billingRouter from "../services/billing/routes/billing.route.js"
@@ -52,6 +53,29 @@ export const createApp = () => {
     app.use("/api/agent", protect, agentRouter)
     app.use("/api/billing", protect, billingRouter)
     app.get("/api/me", protect, getCurrentUser)
+
+    // Serves generated artifacts (pptx / pdf / images). Keys are random UUIDs
+    // so the URL is unguessable - same access model as the S3 presigned links
+    // this replaced. Files self-destruct after 7 days via a Mongo TTL index.
+    app.get("/api/files/:key", async (req, res, next) => {
+        try {
+            const file = await getArtifact(req.params.key)
+
+            if (!file) {
+                return res.status(404).json({ message: "file not found or expired" })
+            }
+
+            const inline = file.contentType.startsWith("image/")
+
+            res.set("Content-Type", file.contentType)
+            res.set("Content-Disposition", `${inline ? "inline" : "attachment"}; filename="${file.filename}"`)
+            res.set("Cache-Control", "private, max-age=604800")
+
+            return res.send(file.data)
+        } catch (error) {
+            return next(error)
+        }
+    })
 
     // Serve the built React app from the same origin. This is what keeps the
     // session cookie first-party (sameSite: "strict" would break across domains).

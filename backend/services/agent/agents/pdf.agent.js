@@ -1,7 +1,6 @@
 import { getModel } from "../config/llmModels.js"
 import { generatePdf } from "../utils/generatePdf.js"
-import { getFromS3 } from "../utils/getFromS3.js"
-import { uploadToS3 } from "../utils/uploadToS3.js"
+import { saveArtifact, artifactUrl } from "../../../shared/files/fileStore.js"
 import { deductCredits } from "../utils/deductCredits.js"
 import { checkAgentLimit } from "../config/agentLimit.js"
 export const pdfAgent=async (state) => {
@@ -42,15 +41,18 @@ ${state.prompt}
         `
 
         const res=await llm.invoke(prompt)
-        const data=JSON.parse(res.content)
+
+        // Strip ```json fences some models add, so a fenced reply still parses.
+        const raw=String(res.content ?? "").trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim()
+        const data=JSON.parse(raw)
        await deductCredits(state.userId,"pdf")
         
         const pdfBuffer=await generatePdf(data)
 
         const filename=`pdf-${Date.now()}.pdf`
-        await uploadToS3(filename,pdfBuffer,"application/pdf")
+        const key=await saveArtifact(filename,pdfBuffer,"application/pdf")
 
-        const downloadUrl=await getFromS3(filename,24*60)
+        const downloadUrl=artifactUrl(key)
 
         return {
           ...state,
@@ -60,14 +62,14 @@ ${state.prompt}
 
 📥 [Download PDF](${downloadUrl})
 
-_Link expires in 10 minutes._`
+_Link stays valid for 7 days._`
         }
 
     } catch (error) {
        console.log(error)
          return {
             ...state,
-            aiResponse:error?.data?.message || "failed to generate pdf"
+            aiResponse:error?.data?.message || `failed to generate pdf: ${error.message}`
         }
     }
 }

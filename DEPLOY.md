@@ -37,9 +37,12 @@ which matters because `auth.controller.js` sets `sameSite: "strict"`.
 4. **Provider keys** - the agent fleet needs:
    `GROQ_API_KEY`, `GOOGLE_API_KEY`, `OPENROUTER_API_KEY`, `TAVILY_API_KEY`.
 5. **Payments** - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`.
-6. **File storage** - `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_KEY`,
-   `AWS_BUCKET_NAME`. Note the agent reads **`AWS_SECRET_KEY`**, not
-   `AWS_SECRET_ACCESS_KEY`.
+6. **File storage** - nothing to set. Generated PPT/PDF/image files are stored
+   in MongoDB and served by the app itself at `GET /api/files/:key` (random
+   UUID keys, auto-deleted after 7 days). The old S3 variables (`AWS_REGION`,
+   `AWS_ACCESS_KEY_ID`, `AWS_SECRET_KEY`, `AWS_BUCKET_NAME`) are no longer
+   used - the access key in circulation had been deleted from AWS, which broke
+   all three generators.
 7. **Frontend build vars** - `VITE_FIREBASE_API_KEY` and `VITE_RAZORPAY_KEY_ID`.
    These are inlined at build time, so they must be set *before* the build.
    Do **not** set `VITE_SERVER_URL` - leaving it unset is what makes API calls
