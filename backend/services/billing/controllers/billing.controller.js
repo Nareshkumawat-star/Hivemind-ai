@@ -27,6 +27,7 @@ export const createOrder = async (req, res) => {
             amount: selectedPlan.amount,
             credits: selectedPlan.credits,
             plan: selectedPlan.id,
+            plan_name: selectedPlan.name,
             currency: order.currency,
             status: "created",
         });
@@ -70,7 +71,12 @@ export const verifyPayment = async (req, res) => {
         await payment.save();
 
         const { data } = await callHandler(updateUserPayment, {
-            body: { userId: payment.userId, plan: payment.plan, credits: payment.credits },
+            body: {
+                userId: payment.userId,
+                plan: payment.plan,
+                credits: payment.credits,
+                plan_name: payment.plan_name,
+            },
         });
 
         return res
@@ -136,7 +142,12 @@ export const paymentWebhook = async (req, res) => {
         await payment.save();
 
         const { data } = await callHandler(updateUserPayment, {
-            body: { userId: payment.userId, plan: payment.plan, credits: payment.credits },
+            body: {
+                userId: payment.userId,
+                plan: payment.plan,
+                credits: payment.credits,
+                plan_name: payment.plan_name,
+            },
         });
 
         return res
